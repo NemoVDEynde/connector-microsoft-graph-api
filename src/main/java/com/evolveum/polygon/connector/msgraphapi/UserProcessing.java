@@ -163,6 +163,7 @@ public class UserProcessing extends ObjectProcessing {
     private static final String ATTR_ONPREMISESEXTENSIONATTRIBUTES = "onPremisesExtensionAttributes";
     private  static final String EXTENSION_ATTRIBUTE = "extensionAttribute";
     private static final int NUMBER_OF_EXTENSIONS = 15;
+
     // technical constants
     private static final String TYPE = "@odata.type";
     private static final String TYPE_GROUP = "#microsoft.graph.group";
@@ -424,6 +425,12 @@ public class UserProcessing extends ObjectProcessing {
             AttributeInfoBuilder attrExtensionAttribute = new AttributeInfoBuilder(attributeName);
             attrExtensionAttribute.setRequired(false).setType(String.class).setCreateable(true).setUpdateable(true).setReadable(true).setMultiValued(false).setReturnedByDefault(false);
             userObjClassBuilder.addAttributeInfo(attrExtensionAttribute.build());
+        }
+
+        // directory extensions
+        for (String ext : directoryExtensionAttributeList(getConfiguration())){
+            userObjClassBuilder.addAttributeInfo(new AttributeInfoBuilder(ext)
+                    .setRequired(false).setType(String.class).setCreateable(false).setUpdateable(true).setReadable(true).build());
         }
 
         //get or update
@@ -690,6 +697,16 @@ public class UserProcessing extends ObjectProcessing {
         return json;
     }
 
+    private List<String> directoryExtensionAttributeList(MSGraphConfiguration config) {
+        List<String> attributes = new ArrayList<>();
+        if (config.getDirectoryExtensions() != null) {
+            String[] extensions = config.getDirectoryExtensions().split(";");
+            for (String extension : extensions) {
+                attributes.add("extension_" + config.getClientId().replaceAll("-", "")+ "_" + extension);
+            }
+        }
+        return attributes;
+    }
     private String[] parseDisabledPlans(String[] disabledPlans) {
         LOG.ok("Parsing disabled plans");
         List<String> list = new ArrayList<String>();
@@ -1012,7 +1029,11 @@ public class UserProcessing extends ObjectProcessing {
         LOG.info("executeQueryForUser()");
         final GraphEndpoint endpoint = getGraphEndpoint();
         final String selectorSingle = getSelectorSingle(options);
-
+        String directoryExtensions = "";
+        for (String ext : directoryExtensionAttributeList(getConfiguration())){
+            directoryExtensions = directoryExtensions + ext + ",";
+        }
+        directoryExtensions = directoryExtensions.substring(0, directoryExtensions.length() - 1);
         final String selectorList = selector(
                 ATTR_ACCOUNTENABLED, ATTR_DISPLAYNAME,
                 ATTR_ONPREMISESIMMUTABLEID, ATTR_MAILNICKNAME, ATTR_USERPRINCIPALNAME,
@@ -1026,7 +1047,7 @@ public class UserProcessing extends ObjectProcessing {
                 ATTR_STATE, ATTR_STREETADDRESS, ATTR_SURNAME,
                 ATTR_USAGELOCATION, ATTR_USERTYPE, ATTR_ASSIGNEDLICENSES,
                 ATTR_EXTERNALUSERSTATE, ATTR_EXTERNALUSERSTATECHANGEDATETIME, ATTR_MANAGER,
-                ATTR_ONPREMISESEXTENSIONATTRIBUTES, ATTR_EMPLOYEE_ID
+                ATTR_ONPREMISESEXTENSIONATTRIBUTES, ATTR_EMPLOYEE_ID, directoryExtensions
         );
 
         String query = null;
@@ -1338,6 +1359,10 @@ public class UserProcessing extends ObjectProcessing {
         getIfExists(user, ATTR_EMPLOYEE_ID, String.class, builder);
         getIfExists(user, ATTR_USERPHOTO, byte[].class, builder);
 
+        for (String ext : directoryExtensionAttributeList(getConfiguration())){
+            getIfExists(user, ext, String.class, builder);
+        }
+
         for (int i = 1; i <= NUMBER_OF_EXTENSIONS; i++) {
             getFromItemIfExists(user, ATTR_ONPREMISESEXTENSIONATTRIBUTES, EXTENSION_ATTRIBUTE + i, String.class, builder);
         }
@@ -1369,7 +1394,11 @@ public class UserProcessing extends ObjectProcessing {
     }
 
     public String getSelectorSingle(OperationOptions options) {
-
+        String directoryExtensions = "";
+        for (String ext : directoryExtensionAttributeList(getConfiguration())){
+            directoryExtensions = directoryExtensions + ext + ",";
+        }
+        directoryExtensions = directoryExtensions.substring(0, directoryExtensions.length() - 1);
         if (options != null) {
 
             return selector(getSchemaTranslator().filter(ObjectClass.ACCOUNT_NAME, options,
@@ -1386,7 +1415,7 @@ public class UserProcessing extends ObjectProcessing {
                     ATTR_USAGELOCATION, ATTR_USERTYPE, ATTR_ASSIGNEDLICENSES,
                     ATTR_EXTERNALUSERSTATE, ATTR_EXTERNALUSERSTATECHANGEDATETIME, ATTR_MANAGER,
                     ATTR_EMPLOYEE_HIRE_DATE, ATTR_EMPLOYEE_LEAVE_DATE_TIME, ATTR_EMPLOYEE_TYPE,
-                    ATTR_FAX_NUMBER, ATTR_EMPLOYEE_ID, ATTR_ONPREMISESEXTENSIONATTRIBUTES
+                    ATTR_FAX_NUMBER, ATTR_EMPLOYEE_ID, ATTR_ONPREMISESEXTENSIONATTRIBUTES, directoryExtensions
             ));
         } else {
 
@@ -1403,7 +1432,7 @@ public class UserProcessing extends ObjectProcessing {
                     ATTR_USAGELOCATION, ATTR_USERTYPE, ATTR_ASSIGNEDLICENSES,
                     ATTR_EXTERNALUSERSTATE, ATTR_EXTERNALUSERSTATECHANGEDATETIME, ATTR_MANAGER,
                     ATTR_EMPLOYEE_HIRE_DATE, ATTR_EMPLOYEE_LEAVE_DATE_TIME, ATTR_EMPLOYEE_TYPE,
-                    ATTR_FAX_NUMBER, ATTR_EMPLOYEE_ID, ATTR_ONPREMISESEXTENSIONATTRIBUTES
+                    ATTR_FAX_NUMBER, ATTR_EMPLOYEE_ID, ATTR_ONPREMISESEXTENSIONATTRIBUTES, directoryExtensions
             );
         }
 
