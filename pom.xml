@@ -29,7 +29,7 @@
 
     <groupId>com.evolveum.polygon</groupId>
     <artifactId>connector-msgraph</artifactId>
-    <version>1.2.1.4-SNAPSHOT</version>
+    <version>1.2.1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>connector-microsoft-graph-api</name>
@@ -48,7 +48,7 @@
         </repository>
         <repository>
             <id>evolveum-nexus-snapshots</id>
-            <name>Internal Releases</name>
+            <name>Internal Releases</name>gi
             <url>https://nexus.evolveum.com/nexus/content/repositories/snapshots/</url>
         </repository>
     </repositories>
