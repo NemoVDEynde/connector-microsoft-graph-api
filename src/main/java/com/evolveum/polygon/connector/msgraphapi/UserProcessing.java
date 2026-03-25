@@ -750,7 +750,7 @@ public class UserProcessing extends ObjectProcessing {
                             multivalue ? "multivalued": "single-value",
                             required? "required": "not required");
                     dirExtSchema.add(new AttributeInfoBuilder(name)
-                            .setType(Byte[].class).setMultiValued(multivalue).setRequired(required).build());
+                            .setType(byte[].class).setMultiValued(multivalue).setRequired(required).build());
                     break;
                 case "datetime":
                     // also to be handled as string
