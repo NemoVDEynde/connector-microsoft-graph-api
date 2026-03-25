@@ -48,7 +48,7 @@
         </repository>
         <repository>
             <id>evolveum-nexus-snapshots</id>
-            <name>Internal Releases</name>gi
+            <name>Internal Releases</name>
             <url>https://nexus.evolveum.com/nexus/content/repositories/snapshots/</url>
         </repository>
     </repositories>
