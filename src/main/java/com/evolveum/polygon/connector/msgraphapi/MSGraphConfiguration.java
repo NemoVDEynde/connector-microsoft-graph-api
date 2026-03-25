@@ -52,7 +52,8 @@ public class MSGraphConfiguration extends AbstractConfiguration
     private String expectedPropertyNames = "Name,Title,TitleLink";
 
     // Directory Extensions
-    private String directoryExtensions;
+    private String[] userDirectoryExtensions;
+    private String[] groupDirectoryExtensions;
 
     @ConfigurationProperty(order = 10, displayMessageKey = "ClientId.display", helpMessageKey = "ClientId.help", required = true)
 
@@ -282,12 +283,20 @@ public class MSGraphConfiguration extends AbstractConfiguration
     }
 
     @ConfigurationProperty(order = 210,
-            displayMessageKey = "directoryExtensions.display",
-            helpMessageKey = "directoryExtensions.help"
+            displayMessageKey = "UserDirectoryExtensions.display",
+            helpMessageKey = "DirectoryExtensions.help"
     )
-    public String getDirectoryExtensions() {return directoryExtensions;}
+    public String[] getUserDirectoryExtensions() {return userDirectoryExtensions;}
 
-    public void setDirectoryExtensions(String discoverSchemaHelp) {this.directoryExtensions = discoverSchemaHelp;}
+    public void setUserDirectoryExtensions(String[] userDirectoryExtensions) {this.userDirectoryExtensions = userDirectoryExtensions;}
+
+    @ConfigurationProperty(order = 220,
+            displayMessageKey = "GroupDirectoryExtensions.display",
+            helpMessageKey = "DirectoryExtensions.help"
+    )
+    public String[] getGroupDirectoryExtensions() {return groupDirectoryExtensions;}
+
+    public void setGroupDirectoryExtensions(String[] groupDirectoryExtensions) {this.groupDirectoryExtensions = groupDirectoryExtensions;}
 
     @Override
     public void validate() {
