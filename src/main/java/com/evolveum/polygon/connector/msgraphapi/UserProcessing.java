@@ -705,6 +705,7 @@ public class UserProcessing extends ObjectProcessing {
         }
         for (String ext : getConfiguration().getUserDirectoryExtensions()) {
             String[] split = ext.split(";");
+            LOG.ok("Adding directory extension {0}", ext);
             if  (split.length != 4){
                 LOG.error("Invalid directory extension definition: {}. Skipping.", ext);
                 continue;
@@ -713,37 +714,56 @@ public class UserProcessing extends ObjectProcessing {
             String type = split[1];
             boolean multivalue = false;
             boolean required = false;
-            if (split[2].equals("true")) {
+            if (split[2].toLowerCase().equals("true")) {
                 multivalue = true;
             }
-            if (split[3].equals("true")) {
+            if (split[3].toLowerCase().equals("true")) {
                 required = true;
             } if (!name.startsWith("extension_")){
+                LOG.ok("extension prefix not found in name adding it to {}",name);
                 name = "extension_" + name;
             }
             switch (type.toLowerCase()) {
                 case "string":
+                    LOG.info("Adding string extension {},{},{}", name,
+                            multivalue ? "multivalued": "single-value",
+                            required? "required": "not required");
                     dirExtSchema.add(new AttributeInfoBuilder(name)
                             .setType(String.class).setMultiValued(multivalue).setRequired(required).build());
                     break;
                 case "boolean":
+                    LOG.info("Adding boolean extension {},{},{}", name,
+                            multivalue ? "multivalued": "single-value",
+                            required? "required": "not required");
                     dirExtSchema.add(new AttributeInfoBuilder(name)
                             .setType(Boolean.class).setMultiValued(false).setRequired(required).build());
                     break;
                 case "integer":
+                    LOG.info("Adding integer extension {},{},{}", name,
+                            multivalue ? "multivalued": "single-value",
+                            required? "required": "not required");
                     dirExtSchema.add(new AttributeInfoBuilder(name)
                             .setType(Integer.class).setMultiValued(false).setRequired(required).build());
                     break;
                 case "binary":
+                    LOG.info("Adding binary extension {},{},{}", name,
+                            multivalue ? "multivalued": "single-value",
+                            required? "required": "not required");
                     dirExtSchema.add(new AttributeInfoBuilder(name)
                             .setType(Byte[].class).setMultiValued(multivalue).setRequired(required).build());
                     break;
                 case "datetime":
                     // also to be handled as string
+                    LOG.info("Adding datetime extension, processed as string {},{},{}", name,
+                            multivalue ? "multivalued": "single-value",
+                            required? "required": "not required");
                     dirExtSchema.add(new AttributeInfoBuilder(name)
                             .setType(String.class).setMultiValued(multivalue).setRequired(required).build());
                     break;
                 case "reference":
+                    LOG.info("Adding reference extension, processed as string {},{},{}", name,
+                            multivalue ? "multivalued": "single-value",
+                            required? "required": "not required");
                     // also to be handled as string, possible association can be done in midpoint
                     dirExtSchema.add(new AttributeInfoBuilder(name)
                             .setType(String.class).setMultiValued(multivalue).setRequired(required).build());
