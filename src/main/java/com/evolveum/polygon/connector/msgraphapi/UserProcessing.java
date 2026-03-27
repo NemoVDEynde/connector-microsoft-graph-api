@@ -699,14 +699,13 @@ public class UserProcessing extends ObjectProcessing {
 
     private List<AttributeInfo> directoryExtensionSchema() {
         List<AttributeInfo> dirExtSchema = new ArrayList<>();
-        if (getConfiguration().getUserDirectoryExtensions()==null)
-        {
+        if (getConfiguration().getUserDirectoryExtensions() == null) {
             return dirExtSchema;
         }
         for (String ext : getConfiguration().getUserDirectoryExtensions()) {
             String[] split = ext.split(";");
             LOG.ok("Adding directory extension {0}", ext);
-            if  (split.length != 4){
+            if (split.length != 4) {
                 LOG.error("Invalid directory extension definition: {0}. Skipping.", ext);
                 continue;
             }
@@ -719,51 +718,52 @@ public class UserProcessing extends ObjectProcessing {
             }
             if (split[3].toLowerCase().equals("true")) {
                 required = true;
-            } if (!name.startsWith("extension_")){
-                LOG.ok("extension prefix not found in name adding it to {0}",name);
+            }
+            if (!name.startsWith("extension_")) {
+                LOG.ok("extension prefix not found in name adding it to {0}", name);
                 name = "extension_" + name;
             }
             switch (type.toLowerCase()) {
                 case "string":
                     LOG.info("Adding string extension {0},{1},{2}", name,
-                            multivalue? "multivalued": "single-value",
-                            required? "required": "not required");
+                            multivalue ? "multivalued" : "single-value",
+                            required ? "required" : "not required");
                     dirExtSchema.add(new AttributeInfoBuilder(name)
                             .setType(String.class).setMultiValued(multivalue).setRequired(required).build());
                     break;
                 case "boolean":
                     LOG.info("Adding boolean extension {0},{1},{2}", name,
-                            multivalue ? "multivalued": "single-value",
-                            required? "required": "not required");
+                            multivalue ? "multivalued" : "single-value",
+                            required ? "required" : "not required");
                     dirExtSchema.add(new AttributeInfoBuilder(name)
                             .setType(Boolean.class).setMultiValued(false).setRequired(required).build());
                     break;
                 case "integer":
                     LOG.info("Adding integer extension {0},{1},{2}", name,
-                            multivalue ? "multivalued": "single-value",
-                            required? "required": "not required");
+                            multivalue ? "multivalued" : "single-value",
+                            required ? "required" : "not required");
                     dirExtSchema.add(new AttributeInfoBuilder(name)
                             .setType(Integer.class).setMultiValued(false).setRequired(required).build());
                     break;
                 case "binary":
                     LOG.info("Adding binary extension {0},{1},{2}", name,
-                            multivalue ? "multivalued": "single-value",
-                            required? "required": "not required");
+                            multivalue ? "multivalued" : "single-value",
+                            required ? "required" : "not required");
                     dirExtSchema.add(new AttributeInfoBuilder(name)
                             .setType(byte[].class).setMultiValued(multivalue).setRequired(required).build());
                     break;
                 case "datetime":
                     // also to be handled as string
                     LOG.info("Adding datetime extension, processed as string {0},{1},{2}", name,
-                            multivalue ? "multivalued": "single-value",
-                            required? "required": "not required");
+                            multivalue ? "multivalued" : "single-value",
+                            required ? "required" : "not required");
                     dirExtSchema.add(new AttributeInfoBuilder(name)
                             .setType(String.class).setMultiValued(multivalue).setRequired(required).build());
                     break;
                 case "reference":
                     LOG.info("Adding reference extension, processed as string {0},{1},{2}", name,
-                            multivalue ? "multivalued": "single-value",
-                            required? "required": "not required");
+                            multivalue ? "multivalued" : "single-value",
+                            required ? "required" : "not required");
                     // also to be handled as string, possible association can be done in midpoint
                     dirExtSchema.add(new AttributeInfoBuilder(name)
                             .setType(String.class).setMultiValued(multivalue).setRequired(required).build());
@@ -910,6 +910,12 @@ public class UserProcessing extends ObjectProcessing {
                 oldSelectors.add(delta.getName());
                 continue;
             }
+            if (delta.getName().startsWith("extension_")) {
+                if (delta.getValuesToRemove() != null || delta.getValuesToAdd() != null) {
+                    oldSelectors.add(delta.getName());
+                    continue;
+                }
+            }
             switch (delta.getName()) {
                 case ATTR_ASSIGNEDLICENSES_SKUID:
                     assignedLicensesDelta = delta;
@@ -933,7 +939,7 @@ public class UserProcessing extends ObjectProcessing {
 
             // Remove unrelated keys
             for (String key : oldJson.keySet()) {
-                if (!UPDATABLE_MULTIPLE_VALUE_ATTRS_OF_USER.contains(key)) {
+                if (!UPDATABLE_MULTIPLE_VALUE_ATTRS_OF_USER.contains(key) && !key.startsWith("extension_")) {
                     oldJson.remove(key);
                 }
             }
@@ -1429,7 +1435,11 @@ public class UserProcessing extends ObjectProcessing {
         getIfExists(user, ATTR_USERPHOTO, byte[].class, builder);
 
         for (AttributeInfo extAttr : directoryExtensionSchema()) {
-            getIfExists(user, extAttr.getName(), extAttr.getType(), builder);
+            if (extAttr.isMultiValued()) {
+                getMultiIfExists(user, extAttr.getName(), builder);
+            } else {
+                getIfExists(user, extAttr.getName(), extAttr.getType(), builder);
+            }
         }
 
         for (int i = 1; i <= NUMBER_OF_EXTENSIONS; i++) {
@@ -1469,8 +1479,7 @@ public class UserProcessing extends ObjectProcessing {
         }
         directoryExtensions = new StringBuilder(directoryExtensions.substring(0, directoryExtensions.length() - 1));
         if (options != null) {
-
-            return selector(getSchemaTranslator().filter(ObjectClass.ACCOUNT_NAME, options,
+            List<String> attrs = new ArrayList<>(List.of(
                     ATTR_ACCOUNTENABLED, ATTR_DISPLAYNAME,
                     ATTR_ONPREMISESIMMUTABLEID, ATTR_MAILNICKNAME, ATTR_USERPRINCIPALNAME, ATTR_ABOUTME,
                     ATTR_BIRTHDAY, ATTR_BUSINESSPHONES, ATTR_CITY, ATTR_COMPANYNAME, ATTR_COUNTRY, ATTR_DEPARTMENT,
@@ -1484,7 +1493,13 @@ public class UserProcessing extends ObjectProcessing {
                     ATTR_USAGELOCATION, ATTR_USERTYPE, ATTR_ASSIGNEDLICENSES,
                     ATTR_EXTERNALUSERSTATE, ATTR_EXTERNALUSERSTATECHANGEDATETIME, ATTR_MANAGER,
                     ATTR_EMPLOYEE_HIRE_DATE, ATTR_EMPLOYEE_LEAVE_DATE_TIME, ATTR_EMPLOYEE_TYPE,
-                    ATTR_FAX_NUMBER, ATTR_EMPLOYEE_ID, ATTR_ONPREMISESEXTENSIONATTRIBUTES, directoryExtensions.toString()
+                    ATTR_FAX_NUMBER, ATTR_EMPLOYEE_ID, ATTR_ONPREMISESEXTENSIONATTRIBUTES
+            ));
+            for (AttributeInfo extAttr : directoryExtensionSchema()) {
+                attrs.add(extAttr.getName());
+            }
+            return selector(getSchemaTranslator().filter(ObjectClass.ACCOUNT_NAME, options,
+                    attrs.toArray(new String[0])
             ));
         } else {
 
