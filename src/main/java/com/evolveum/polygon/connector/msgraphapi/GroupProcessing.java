@@ -199,16 +199,16 @@ public class GroupProcessing extends ObjectProcessing {
 
         return groupObjClassBuilder.build();
     }
+
     private List<AttributeInfo> directoryExtensionSchema() {
         List<AttributeInfo> dirExtSchema = new ArrayList<>();
-        if (getConfiguration().getGroupDirectoryExtensions()==null)
-        {
+        if (getConfiguration().getGroupDirectoryExtensions() == null) {
             return dirExtSchema;
         }
         for (String ext : getConfiguration().getGroupDirectoryExtensions()) {
             String[] split = ext.split(";");
             LOG.ok("Adding directory extension {0}", ext);
-            if  (split.length != 4){
+            if (split.length != 4) {
                 LOG.error("Invalid directory extension definition: {0}. Skipping.", ext);
                 continue;
             }
@@ -221,51 +221,52 @@ public class GroupProcessing extends ObjectProcessing {
             }
             if (split[3].toLowerCase().equals("true")) {
                 required = true;
-            } if (!name.startsWith("extension_")){
-                LOG.ok("extension prefix not found in name adding it to {0}",name);
+            }
+            if (!name.startsWith("extension_")) {
+                LOG.ok("extension prefix not found in name adding it to {0}", name);
                 name = "extension_" + name;
             }
             switch (type.toLowerCase()) {
                 case "string":
                     LOG.info("Adding string extension {0},{1},{2}", name,
-                            multivalue? "multivalued": "single-value",
-                            required? "required": "not required");
+                            multivalue ? "multivalued" : "single-value",
+                            required ? "required" : "not required");
                     dirExtSchema.add(new AttributeInfoBuilder(name)
                             .setType(String.class).setMultiValued(multivalue).setRequired(required).build());
                     break;
                 case "boolean":
                     LOG.info("Adding boolean extension {0},{1},{2}", name,
-                            multivalue ? "multivalued": "single-value",
-                            required? "required": "not required");
+                            multivalue ? "multivalued" : "single-value",
+                            required ? "required" : "not required");
                     dirExtSchema.add(new AttributeInfoBuilder(name)
                             .setType(Boolean.class).setMultiValued(false).setRequired(required).build());
                     break;
                 case "integer":
                     LOG.info("Adding integer extension {0},{1},{2}", name,
-                            multivalue ? "multivalued": "single-value",
-                            required? "required": "not required");
+                            multivalue ? "multivalued" : "single-value",
+                            required ? "required" : "not required");
                     dirExtSchema.add(new AttributeInfoBuilder(name)
                             .setType(Integer.class).setMultiValued(false).setRequired(required).build());
                     break;
                 case "binary":
                     LOG.info("Adding binary extension {0},{1},{2}", name,
-                            multivalue ? "multivalued": "single-value",
-                            required? "required": "not required");
+                            multivalue ? "multivalued" : "single-value",
+                            required ? "required" : "not required");
                     dirExtSchema.add(new AttributeInfoBuilder(name)
                             .setType(byte[].class).setMultiValued(multivalue).setRequired(required).build());
                     break;
                 case "datetime":
                     // also to be handled as string
                     LOG.info("Adding datetime extension, processed as string {0},{1},{2}", name,
-                            multivalue ? "multivalued": "single-value",
-                            required? "required": "not required");
+                            multivalue ? "multivalued" : "single-value",
+                            required ? "required" : "not required");
                     dirExtSchema.add(new AttributeInfoBuilder(name)
                             .setType(String.class).setMultiValued(multivalue).setRequired(required).build());
                     break;
                 case "reference":
                     LOG.info("Adding reference extension, processed as string {0},{1},{2}", name,
-                            multivalue ? "multivalued": "single-value",
-                            required? "required": "not required");
+                            multivalue ? "multivalued" : "single-value",
+                            required ? "required" : "not required");
                     // also to be handled as string, possible association can be done in midpoint
                     dirExtSchema.add(new AttributeInfoBuilder(name)
                             .setType(String.class).setMultiValued(multivalue).setRequired(required).build());
@@ -300,7 +301,7 @@ public class GroupProcessing extends ObjectProcessing {
         // This is valid for security group creation
         Attribute members = null;
         Attribute owners = null;
-        for (Attribute attribute: attributes) {
+        for (Attribute attribute : attributes) {
             switch (attribute.getName()) {
                 case ATTR_MEMBERS:
                     members = attribute;
@@ -352,6 +353,12 @@ public class GroupProcessing extends ObjectProcessing {
                 oldSelectors.add(delta.getName());
                 continue;
             }
+            if (delta.getName().startsWith("extension_")) {
+                if (delta.getValuesToRemove() != null || delta.getValuesToAdd() != null) {
+                    oldSelectors.add(delta.getName());
+                    continue;
+                }
+            }
             switch (delta.getName()) {
                 case ATTR_MEMBERS:
                     members = delta;
@@ -400,8 +407,7 @@ public class GroupProcessing extends ObjectProcessing {
             if (isExist(displayName)) {
                 LOG.ok("Group with displayName {0} FOUND in createOp, retry count: {1}", displayName, getGroupByNameRetryCount);
                 return;
-            }
-            else {
+            } else {
                 getGroupByNameRetryCount++;
                 try {
                     long sleepTime = configuration.getPostCreateReadRetryBaseDelayMs() * (1L << (getGroupByNameRetryCount - 1));
@@ -674,8 +680,9 @@ public class GroupProcessing extends ObjectProcessing {
 
     /**
      * Adds group accounts to the group JSON Object. Decides upon members or owners based on @param isMembers.
-     * @param group Original group object to extend with owners or members account ids
-     * @param accounts Attribute of account ids
+     *
+     * @param group     Original group object to extend with owners or members account ids
+     * @param accounts  Attribute of account ids
      * @param isMembers Flag to determine whether to add members or owners
      * @return JSONObject of group with respective owners or members key.
      */
@@ -686,7 +693,7 @@ public class GroupProcessing extends ObjectProcessing {
         final GraphEndpoint endpoint = getGraphEndpoint();
 
         JSONArray json = new JSONArray();
-        accounts.getValue().forEach( it -> {
+        accounts.getValue().forEach(it -> {
             final String ownerQuery = USERS + "/" + it.toString();
             try {
                 json.put(endpoint.createURIBuilder().setPath(ownerQuery).build().toString());
@@ -755,7 +762,11 @@ public class GroupProcessing extends ObjectProcessing {
         getMultiIfExists(group, ATTR_MEMBERS, builder);
         getMultiIfExists(group, ATTR_OWNERS, builder);
         for (AttributeInfo extAttr : directoryExtensionSchema()) {
-            getIfExists(group, extAttr.getName(), extAttr.getType(), builder);
+            if (extAttr.isMultiValued()) {
+                getMultiIfExists(group, extAttr.getName(), builder);
+            } else {
+                getIfExists(group, extAttr.getName(), extAttr.getType(), builder);
+            }
         }
 
         return builder;
